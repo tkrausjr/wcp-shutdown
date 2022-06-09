@@ -2,10 +2,10 @@
 WCP-Shutdown is simple Python script that you point to a vCenter and it is able to gracefully shutdown your TKGs environment.
 
 ##  Coverage
-  - [x] Return Supervisor Cluster Object - VC API
+  - [ ] Return Supervisor Cluster Object - VC API
   - [x] Login to Supervisor Cluster  and enumerate all Workload Clusters - K8s API on SC
   - [x] Cordon all Workload Cluster Worker Nodes - K8s API on GC
-  - [x] Power Down all Worker Nodes in Worker Cluster - VC API or GOVC
+  - [ ] Power Down all Worker Nodes in Worker Cluster - VC API or GOVC
   - [x] Power Down the Control Plane for each Guest Cluster -VC API or GOVC
   - [x] Validate all Guest Clusters are powere down on Supervisor Cluster - K8s API
   ---
@@ -16,29 +16,46 @@ WCP-Shutdown is simple Python script that you point to a vCenter and it is able 
 
  
 
-## Create & Populate the Parameters file used for input values 
-Download the sample parameters file from this repo or copy and paste below to a parameters file named **test_params.yaml** in the $HOME folder on the system where you will run the validation script.
-``` yaml
-### COMMON SETTINGS
-VC_HOST: 'vcsa.tpmlab.vmware.com'    # VCSA FQDN or IP MUST ADD A Rec to DNS
-VC_IP: '10.173.13.81'                      # VCSA IP
-VC_SSO_USER: 'administrator@vsphere.local'
-VC_SSO_PWD:  '***********'
-VC_DATACENTER: 'Datacenter'
-VC_CLUSTER:  'Nested-TKG-Cluster'
-
-### Section for WCP Supervisor Cluster Deployment
-WCP_MGMT_STARTINGIP: '192.168.100.141'
-WCP_MGMT_MASK: '255.255.255.0'
-WCP_MGMT_GATEWAY: '192.168.100.1'
-
 
 ``` 
 
-## Running the Pre-checks
-You have two options for running the environment prechecks. Both options require you to create the **test_params.yaml** file in the $HOME directory of the linux machine where you will either run the script (locally or via Docker container). You should copy paste the sample **test_params.yaml** file from this repo into your $HOME directory as a starting point and update the values for the environment being tested.
+## Running the Big Red Button
+You have two options for running the environment shutdown. 
 
-### Option 1(Preferred) - Run from a Docker Container on a host with Docker and access to VM Management Network
+### Option 1 - Run script locally on Linux machine with access to VCenter
+
+On Ubuntu 18.04 with Python3 already installed.
+```
+pip3 install --force pyvmomi
+pip3 install --force pyvim
+git clone https://github.com/tkrausjr/wcp-shutdown.git
+```
+
+To run the shutdown script
+``` bash
+
+❯ cd wcp-shutdown
+❯ python3 wcp-shutdown.py -s 192.168.100.50 -u administrator@vsphere.local -p somepassword
+                           
+Found Namespaces Resource Pool 
+
+Shutting down VM: Avi-se-tfjfw
+Shutting down VM: Avi-se-iorvg
+Shutting down VM: workload-vsphere-tkg5-default-nodepool-kph4q-64877fc9f4-dgkzw
+Shutting down VM: vCLS-fedd009d-47e2-478e-9b60-d45931238444
+Shutting down VM: SupervisorControlPlaneVM (3)
+Shutting down VM: arcas
+Shutting down VM: workload-vsphere-tkg5-control-plane-gq26b
+Shutting down VM: workload-vsphere-tkg5-default-nodepool-kph4q-64877fc9f4-5jjc5
+Shutting down VM: vCLS-1e67a112-5249-40c1-bcb4-1b755bab25be
+Shutting down VM: SupervisorControlPlaneVM (1)
+Shutting down VM: workload-vsphere-tkg5-default-nodepool-kph4q-64877fc9f4-tt9rk
+Shutting down VM: SupervisorControlPlaneVM (2)
+Shutting down VM: avi.env1.lab.test
+Shutting down VM: vCLS-667cb24b-6bc6-458c-9b6b-83c3f3ea134f
+
+
+### Option 2(COMING SOON) - Run from a Docker Container on a host with Docker and access to VM Management Network
 
 On any nix machine with Docker already installed.
 ```
@@ -49,45 +66,7 @@ docker run -it --rm -v $HOME:/root -w /usr/src/app mytkrausjr/py3-wcp-precheck:v
 docker run -it --rm -v $HOME:/root:z -w /usr/src/app mytkrausjr/py3-wcp-precheck:v7 python wcp_tests.py -n vsphere
 ```
 
-### Option 2 - Run script locally on Linux machine with access to VM Management Network
-
-On Ubuntu 18.04 with Python3 already installed.
-```
-git clone https://gitlab.eng.vmware.com/TKGS-TSL/wcp-precheck.git              
-Cloning into 'wcp-precheck'...
-Username for 'https://gitlab.eng.vmware.com':   <VMware User ID IE njones>
-Password for 'https://kraust@gitlab.eng.vmware.com':  <VMware Password>
-cd wcp-precheck/pyvim
-chmod +x ./wcp_tests.py 
-cp ./test_params.yaml ~/test_params.yaml
-vi ~/test_params.yaml    ### See Below of explanation
-pip3 install pyVmomi
-pip3 install pyaml
-pip3 install requests
-pip3 install pyVim
-```
-
-
-To run the validation script
-``` bash
-
-❯ cd github/wcp-precheck/pyvim
-❯ ./wcp_tests.py -h                              
-usage: wcp_tests.py [-h] [--version] [-n {nsxt,vsphere}] [-v [{INFO,DEBUG}]]
-
-vcenter_checks.py validates environments for succcesful Supervisor Clusters
-setup in vSphere 7 with Tanzu. Uses YAML configuration files to specify
-environment information to test. Find additional information at:
-gitlab.eng.vmware.com:TKGS-TSL/wcp-precheck.git
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --version             show programs version number and exit
-  -n {nsxt,vsphere}, --networking {nsxt,vsphere}
-                        Networking Environment(nsxt, vsphere)
-  -v [{INFO,DEBUG}], --verbosity [{INFO,DEBUG}]
-
-❯ wcp_tests.py -n nsxt 
+--------------------------------------------
 
 docker run -it --rm -v $HOME:/root -w /usr/src/app mytkrausjr/py3-wcp-precheck:v7 python wcp_tests.py -n nsxt
 INFO: 2021-03-26 16:39:57: __main__: 62: Looking in /root for test_params.yaml file
