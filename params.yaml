@@ -1,0 +1,46 @@
+### COMMON SETTINGS
+DOMAIN: 'tpmlab.vmware.com'
+NTP_SERVER: 'time.vmware.com'
+DNS_SERVERS:
+  - '10.173.13.90'
+VC_HOST: 'vcsa.tpmlab.vmware.com'    # VCSA FQDN or IP MUST ADD A Rec to DNS
+VC_IP: '10.173.13.81'                      # VCSA IP
+VC_SSO_USER: 'administrator@vsphere.local'
+VC_SSO_PWD: '**********'
+VC_DATACENTER: 'Datacenter'
+VC_CLUSTER:  'Nested-TKG-Cluster'
+VC_STORAGEPOLICIES:          # Storage Policies to use 
+  - 'thin'  
+  - 'thinner'      
+VC_DATASTORE: '66-datastore3'    # FUTURE - If needed 
+
+### Section for vSphere Networking Deployments
+VDS_NAME: 'vds-1'
+VDS_MGMT_PG: 'management-vm'
+VDS_PRIMARY_WKLD_PG: 'not_there'
+VDS_WKLD_PG: 'ext-uplink-edge'
+HAPROXY_IP: '192.168.100.163'
+HAPROXY_PORT: 5556      # HAProxy Dataplane API Mgmt Port chosen during OVA Deployment
+HAPROXY_IP_RANGE_START: '10.173.13.38' # HAProxy LB IP Range chosen during OVA Deployment
+HAPROXY_IP_RANGE_SIZE: 29
+HAPROXY_USER: 'admin'
+HAPROXY_PW: '**********'
+
+### Section for NSX-T Networking Deployments
+VDS_NAME: 'vds-1'
+VDS_MGMT_PG: 'management-vm'
+VDS_UPLINK_PG: 'ext-uplink-edge'
+VDS_EDGE_TEP_PG: 'tep-edge'
+HOST_TEP_VLAN: 102
+NSX_MGR_HOST: 'nsxmgr.tpmlab.vmware.com'   # FQDN of NSX-T Manager Appliance
+NSX_MGR_IP: '10.173.13.82'    # IP Addr of NSX-T Manager Appliance
+NSX_USER: 'admin'   # API Username for NSX-T Manager Appliance
+NSX_PASSWORD: '***********'    # API Password for NSX-T Manager Appliance
+
+### Section for WCP Supervisor Cluster Deployment
+WCP_MGMT_STARTINGIP: '192.168.100.141'
+WCP_MGMT_MASK: '255.255.255.0'
+WCP_MGMT_GATEWAY: '192.168.100.1'
+
+
+
