@@ -1,93 +1,31 @@
-# WCP-precheck
-WCP-Precheck project aims to make POC's and vSphere with Tanzu installations less painful for customers and overall more successful by quickly indentifying common misconfigurations and errors that would prevent a successful installation of WCP .  The pre-checks can be run by VMware Tanzu SE's or Customers to quickly validate a vSphere environment is ready for a successful vSphere with Tanzu Supervisor Cluster creation.  The project has options for testing both NSX-T based and vSphere based networking for vSphere with Tanzu and can be run as a standalone script or via Docker.
+# WCP-shutdown
+WCP-Shutdown is simple Python script that you point to a vCenter and it is able to gracefully shutdown your TKGs environment.
 
-## Test Coverage
-  ### General
-  - [x] The Tag-based storage policy specified exists the vCenter.
-  - [x] DNS forward and reverse resolution should work for vCenter and NSX Manager.
-  - [x] Ping/curl various network end points that they are reachable (DNS, NTP, VCenter, NSX Manager, )
-  - [x] Validate vSphere API is accessible and provided credentials are valid.
-  - [x] Validate existence of vSphere cluster specified in configuration YAML is valid.
-  - [x] Validate existence of VDS specified in configuration YAML is valid.
-  - [x] Validate existence of Datacenter specified in configuration YAML is valid.
-  - [x] Validate existence of Cluster specified in configuration YAML is valid.
-  - [x] Validate that vLCM (Personality Manager) is not enabled on the specified cluster if vSphere <= 7.0 U1.
-  - [x] Validate that HA is enabled on the specified cluster.
-  - [x] Validate that DRS is enabled and set to Fully Automated Mode on the specified cluster.
-  - [x] Validate that a compatible NSX-T VDS exists.
-  - [x] Validate that at leaset one content library is created on the vCenter.
-  - [x] NTP driff between vCenter and ESXi hosts in Cluster
+##  Coverage
+  - [x] Return Supervisor Cluster Object - VC API
+  - [x] Login to Supervisor Cluster  and enumerate all Workload Clusters - K8s API on SC
+  - [x] Cordon all Workload Cluster Worker Nodes - K8s API on GC
+  - [x] Power Down all Worker Nodes in Worker Cluster - VC API or GOVC
+  - [x] Power Down the Control Plane for each Guest Cluster -VC API or GOVC
+  - [x] Validate all Guest Clusters are powere down on Supervisor Cluster - K8s API
   ---
-  ### NSX based networking
-  - [x] Validate required VDS Port Groups(Management, Edge TEP, Uplink) specified in configuration YAML is valid.
-  - [x] DNS forward and reverse resolution should work for NSX Manager.
-  - [x] Validate we can communicate with NSX Manager on network and NSX Management Node and Cluster is Healthy.
-  - [x] Validate NSX-T API is accessible and provided credentials are valid.
-  - [x] Validate Health of ESXi Transport Nodes(NSX-T Agent Install and Status) in vSphere Cluster.
-  - [x] Validate Health of Edge Transport Nodes(Status) in vSphere Cluster.
-  - [ ] Ingress and Egress network is routed
-  - [ ] Heartbeat ping to the uplink IP (T0 interface) is working. 
-  - [ ] 1600 byte ping with no fragmentation between ESXi TEPs
-  - [ ] 1600 byte ping with no fragmentation between ESXi TEPs to Edge TEPs.   
-  - [x] Validate EDGE VMs are deployed as at least large.
-  - [x] NTP driff between EDGE, vCenter and ESXi
-  - [ ] Depending on NSX version, EDGE vTEP and ESX vTEP are on different VLANs
-  - [x] Validate existence of a T0 router.
-  - [ ] T0 router can access DNS and NTP
-  ---
-  ### (COMING SOON) VDS based AVI Lite config
+ 
+  ### (COMING SOON) VDS based AVI 
   - [ ] AVI Controller liveness probes that check each network connectivity and the frontend VIP IP's
   - [ ] AVI Service Engine Health.
 
-  ---
-  ### VDS based HAProxy config
-  - [x] HA proxy liveness probes that check each network connectivity and the frontend VIP IP's
-  - [ ] The HA Proxy Load-Balancer IP Range and WCP Workload Network Range must not include the Gateway address for the overall Workload Network.
-  - [ ] The HA Proxy Workload IP should be in the overall Workload network, but outside of the Load-Balancer IP Range and the WCP Workload Network Range.
-  - [ ] The IP ranges for the OVA and the WCP enablement should be checked to be the same
-  - [ ] The WCP Range for Virtual Servers must be exactly the range defined by the Load-Balancer IP Range in HA Proxy.  
-  - [x] Validate successful login access to HAProxy VM's API endpoint.
-
+ 
 
 ## Create & Populate the Parameters file used for input values 
 Download the sample parameters file from this repo or copy and paste below to a parameters file named **test_params.yaml** in the $HOME folder on the system where you will run the validation script.
 ``` yaml
 ### COMMON SETTINGS
-DOMAIN: 'tpmlab.vmware.com'
-NTP_SERVER: 'time.vmware.com'
-DNS_SERVERS:
-  - '10.173.13.90'
 VC_HOST: 'vcsa.tpmlab.vmware.com'    # VCSA FQDN or IP MUST ADD A Rec to DNS
 VC_IP: '10.173.13.81'                      # VCSA IP
 VC_SSO_USER: 'administrator@vsphere.local'
 VC_SSO_PWD:  '***********'
 VC_DATACENTER: 'Datacenter'
 VC_CLUSTER:  'Nested-TKG-Cluster'
-VC_STORAGEPOLICIES:          # Storage Policies to use 
-  - 'thin'  
-  - 'thinner'      
-
-### Section for vSphere Networking Deployments
-VDS_NAME: 'vds-1'
-VDS_MGMT_PG: 'management-vm'
-VDS_PRIMARY_WKLD_PG: 'not_there'
-HAPROXY_IP: '192.168.100.163'
-HAPROXY_PORT: 5556      # HAProxy Dataplane API Mgmt Port chosen during OVA Deployment
-HAPROXY_IP_RANGE_START: '10.173.13.38' # HAProxy LB IP Range chosen during OVA Deployment
-HAPROXY_IP_RANGE_SIZE: 29
-HAPROXY_USER: 'admin'
-HAPROXY_PW: '***********'
-
-### Section for NSX-T Networking Deployments
-VDS_NAME: 'vds-1'
-VDS_MGMT_PG: 'management-vm'
-VDS_UPLINK_PG: 'ext-uplink-edge'
-VDS_EDGE_TEP_PG: 'tep-edge'
-HOST_TEP_VLAN: 102
-NSX_MGR_HOST: 'nsxmgr.tpmlab.vmware.com'   # FQDN of NSX-T Manager Appliance
-NSX_MGR_IP: '10.173.13.82'    # IP Addr of NSX-T Manager Appliance
-NSX_USER: 'admin'   # API Username for NSX-T Manager Appliance
-NSX_PASSWORD: '***********'    # API Password for NSX-T Manager Appliance
 
 ### Section for WCP Supervisor Cluster Deployment
 WCP_MGMT_STARTINGIP: '192.168.100.141'
