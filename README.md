@@ -28,6 +28,7 @@ On Ubuntu 18.04 with Python3 already installed.
 ```
 pip3 install --force pyvmomi
 pip3 install --force pyvim
+pip3 install kubernetes
 git clone https://github.com/tkrausjr/wcp-shutdown.git
 ```
 

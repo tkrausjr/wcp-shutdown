@@ -63,6 +63,7 @@ def main():
         for pool in service_instance.RetrieveContent().rootFolder.childEntity[0].hostFolder.childEntity[0].resourcePool.resourcePool:
             if pool.name == "Namespaces":
                 print("Found Namespaces Resource Pool \n")
+                print(pool)
                 resourcePool=pool
             
         # Search for all VMs
@@ -71,10 +72,21 @@ def main():
                                                           True)
         vmList = objview.view
         objview.Destroy()
+        print("\n Found all VMS on VC. Quantiy is = ", str(len(vmList)))
         for vm in vmList:
             print("Shutting down VM: %s" % vm.name)
             #vm.ShutdownGuest()
 
+
+        # SCRATCH Search for all VMs
+        objview = content.viewManager.CreateContainerView(content.rootFolder.ResourcePool,
+                                                          [vim.VirtualMachine],
+                                                          True)
+        vmList = objview.view
+        objview.Destroy()
+        print("\n Found VMS quantiy = ", str(len(vmList)))
+        for vm in vmList:
+            print("Found a VM: %s" % vm.name)
 
 
     except vmodl.MethodFault as error:
