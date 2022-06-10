@@ -36,7 +36,7 @@ To run the shutdown script
 ``` bash
 
 ❯ cd wcp-shutdown
-❯ python3 wcp-shutdown.py -s 192.168.100.50 -u administrator@vsphere.local -p somepassword
+❯ python3 wcp-shutdown.py -s 192.168.100.50 -u administrator@vsphere.local 
                            
 Found Namespaces Resource Pool 
 
