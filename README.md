@@ -21,6 +21,9 @@ pip3 install kubernetes
 git clone https://github.com/tkrausjr/wcp-shutdown.git
 ```
 
+### vCenter Permissions
+You must run the script with a User that is a member of the "ServiceProviderUsers" Group in vCenter.
+
 ## Running the Big Red Button
 You have two options for running the environment shutdown. 
 
