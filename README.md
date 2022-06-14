@@ -29,7 +29,6 @@ git clone https://github.com/tkrausjr/wcp-shutdown.git
 You must run the script with a User that is a member of the "ServiceProviderUsers" Group in vCenter.
 
 ## Running the Big Red Button
-You have two options for running the environment shutdown. 
 
 ### Option 1 - Run script locally on Linux machine with access to VCenter
 
