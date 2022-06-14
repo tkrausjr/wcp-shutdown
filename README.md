@@ -2,12 +2,16 @@
 WCP-Shutdown is simple Python script that you point to a vCenter and it is able to gracefully shutdown your TKGs environment.
 
 ##  Coverage
-  - [x] Return Supervisor Cluster Object - VC API
-  - [x] Login to Supervisor Cluster  and enumerate all Workload Cluster Machine objects - K8s API on SC
+
+  - [x] Find and Return 3 Supervisor Control Plane VMs from pyVmomi vSphere API.
+  - [x] Find all TKG Workload Cluster Machine objects from K8s API on Supervisor Cluster.
+  - [x] Shutdown WCP Service on vCenter and set Startup Type to Manual.
+  - [ ] Shutdown Supervisor Control Plane VMs - VC API or GOVC
+  - [x] Shutdown all Worker & Control Plane Nodes in TKG Clusters - VC API or GOVC
   - [ ] Cordon all Workload Cluster Worker Nodes - K8s API on GC
-  - [x] Power Down all Worker Nodes in Worker Cluster - VC API or GOVC
-  - [ ] Power Down the Control Plane for each Guest Cluster -VC API or GOVC
   - [ ] Validate all Guest Clusters are powere down on Supervisor Cluster - K8s API
+  - [ ] Stop CAPI CAPW Controllers
+  - [ ] 
   ---
 
 ## Setting up the Big Red Button
@@ -92,12 +96,5 @@ wcp-shutdown.py -s 192.168.100.50 -u administrator@vsphere.local -p VMware1!    
 
 ```
 
-### Option 2(COMING SOON) - Run from a Docker Container on a host with Docker and access to VM Management Network
-
-On any nix machine with Docker already installed.
-```
-docker run -it --rm -v $HOME:/root -w /usr/src/app mytkrausjr/py3-wcp-precheck:v7 python wcp_tests.py -n vsphere
-```
-**NOTE:** On systems with SELinux enabled you need to pass an extra mount option "z" to the end of the volume definition in docker run. Without this option you will get a permission error when you run the container.
 
 
