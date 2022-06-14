@@ -35,7 +35,7 @@ You must run the script with a User that is a member of the "ServiceProviderUser
 To run the shutdown script
 ``` bash
 
-python3 wcp-shutdown.py -s 192.168.100.50 -u administrator@vsphere.local -p VMware1!                                                                 ─╯
+python3 wcp-shutdown.py -s 192.168.100.50 -u administrator@vsphere.local -p <yourpassword>                                                               
 
 Logging into vCenter API with supplied credentials
 
@@ -77,7 +77,6 @@ To change context, use `kubectl config use-context <workload name>`
 STEP 3 - Stopping WCP Service on vCenter
 -Press Enter to confirm/continue...
 -Successfully set WCP Service Startup to MANUAL. Response Code 204
-204
 -Successfully stopped WCP Service. Response Code 204
 
 STEP 4 - Shutting down all Supervisor Cluster VMs
