@@ -36,7 +36,6 @@ def stop_vc_svcname(s,vcip,svc_name):
         return 0
     
     stop_json_response = s.post('https://' + vcip + '/api/vcenter/services/' + svc_name + '?action=stop')
-    print(stop_json_response.status_code)
     if stop_json_response.status_code==204:
         print("-Successfully stopped WCP Service. Response Code %s " % stop_json_response.status_code )
     else:
@@ -178,6 +177,29 @@ def main():
             #print(' -VM guest Name =', vm.summary.config.guestFullName)
             wkld_cluster_vms.append(vm)
 
+    
+    ######################################################################################
+    ## START DEBUG LEARN ABOUT SC Cluster VMs
+    print("\nSTEP 2a - Find out HOSTS and IPs for a Supervisor Cluster VMs")
+    for svm in supervisor_cluster_vms:
+        #print("\t",svm.runtime.host.summary)
+        #print("\t",svm.runtime.host.summary.managementServerIp)  # This is BS it shows VCenter since its managed by VC
+        print("\tVM ",svm.summary.config.name, " is running on ESX host ", svm.runtime.host.name)
+        vnicManager = svm.runtime.host.configManager.virtualNicManager
+        netConfig = vnicManager.QueryNetConfig("management")
+        for vNic in netConfig.candidateVnic:
+            if (netConfig.selectedVnic.index( vNic.key ) == -1):
+                print("\tvNic[ " + vNic.key + " ] is not selected; skipping it")
+            else:
+                print("\tvNic[ " + vNic.key + " ] is selected");  
+                #print(vNic.spec.ip.ipAddress) 
+                #print("\n")
+                print("\t",svm.runtime.host.name, " has Management IP ", vNic.spec.ip.ipAddress)
+        
+    input("-Press Enter to confirm/continue...or CONTROL - C or Control X to stop program")
+    ##  END DEBUG
+    ######################################################################################
+    
     # Shutdown WCP Service on vCenter
     print("\nSTEP 3 - Stopping WCP Service on vCenter")
     input("-Press Enter to confirm/continue...")
