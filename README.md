@@ -17,7 +17,10 @@ WCP-Shutdown is simple Python script that you point to a vCenter and it is able 
 ## Setting up the Big Red Button
 You have two options for running the environment shutdown. 
 
-On Ubuntu 18.04 with Python3 already installed.
+On Ubuntu 20.04 with Python3 already installed.
+1) Make sure kubectl with kubectl vSphere plugin installed on the Host 
+2) Install the required Python Modules
+
 ```
 pip3 install --force pyvmomi
 pip3 install --force pyvim
