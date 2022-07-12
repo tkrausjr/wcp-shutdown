@@ -200,7 +200,7 @@ def main():
         vm=search_index.FindByDnsName(None, machine['metadata']['name'],True)
         
         if vm is None:
-            print("-ERROR-Could not find specified VM with VC API ")
+            print("-Could not find a matching VM with VC API ")
   
         else:
             print("-Found VM matching CAPI Machine Name in VC API. VM=%s. " % vm.summary.config.name)
