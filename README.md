@@ -1,5 +1,5 @@
 # WCP-shutdown
-WCP-Shutdown is simple Python script that you point to a vCenter and it is able to gracefully shutdown your TKGs or vSphere with Tanzu environment.  The use case for the script is in anticipation for planned maintenance to your vSphere environment such as a planned datacenter outage.
+wcp-shutdown will gracefully shutdown a vSphere with Tanzu environment including Supervisor Cluster and all TKG Guest Clusters.  The use case for the script is in anticipation for planned maintenance to your vSphere environment such as a planned datacenter outage.
 
 ##  Coverage
   - [x] Find and Return 3 Supervisor Control Plane VMs from pyVmomi vSphere API.
