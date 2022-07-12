@@ -26,35 +26,86 @@ def GetArgs():
    args = parser.parse_args()
    return args
 
+def get_si(host,user,password,args):
+    # PyVMomi work to get all VMs on VC
+    service_instance = None
+    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    context.verify_mode = ssl.CERT_NONE   
+    service_instance = SmartConnect(host=host,
+                                            user=user,
+                                            pwd=password,
+                                            port=int(args.port),
+                                            sslContext=context)
+    print("--Successfully logged in to VIM API")
+    return service_instance
+
+    if not service_instance:
+        print("--Could not connect to the specified host using specified username and password")
+        return -1
+
 def stop_vc_svcname(s,vcip,svc_name):
     json_config = {"startup_type": "MANUAL"}
     startup_json_response = s.patch('https://' + vcip + '/api/vcenter/services/' + svc_name, json=json_config)
     if startup_json_response.status_code==204:
-        print("-Successfully set WCP Service Startup to MANUAL. Response Code %s " % startup_json_response.status_code )
+        print("--Successfully set WCP Service Startup to MANUAL. Response Code %s " % startup_json_response.status_code )
     else:
-        print("-ERROR-Unable to setup Startup for WCP Service to Manual")
+        print("--ERROR-Unable to setup Startup for WCP Service to Manual")
         return 0
     
     stop_json_response = s.post('https://' + vcip + '/api/vcenter/services/' + svc_name + '?action=stop')
-    print(stop_json_response.status_code)
     if stop_json_response.status_code==204:
-        print("-Successfully stopped WCP Service. Response Code %s " % stop_json_response.status_code )
+        print("--Successfully stopped WCP Service. Response Code %s " % stop_json_response.status_code )
     else:
-        print("-ERROR-Unable to stop WCP Service")
+        print("--ERROR-Unable to stop WCP Service")
         return 0
     
 def shutdown_Vm(delay,list_of_vms):
     for vm in list_of_vms:
         try:
-            print("-Shutting dow VM %s." % vm.summary.config.name)
+            print("--Shutting down VM %s." % vm.summary.config.name)
             vm.ShutdownGuest()
-            print("-Pausing for %s seconds..." % delay)
+            print("--Pausing for %s seconds..." % delay)
             time.sleep(delay)
         
         except vmodl.MethodFault as error:
-            print("-ERROR-Caught error trying to shutdown VM  " )
-            print("-ERROR-Caught vmodl fault : " + error.msg)
+            print("--ERROR-Caught error trying to shutdown VM  " )
+            print("--ERROR-Caught vmodl fault : " + error.msg)
             return -1
+
+def shutdown_sc_vm(delay,vm_name,vm_uuid,vm_host_ip,args):
+    try:
+        print("\n--Shutting down VM " + vm_name + " on host "+ vm_host_ip )
+        esx_service_instance = get_si(vm_host_ip,"root","VMware1!",args)
+        content = esx_service_instance.RetrieveContent()
+        atexit.register(Disconnect, esx_service_instance)
+        search_index=esx_service_instance.content.searchIndex
+        scvm=search_index.FindByUuid(None, vm_uuid,True)
+
+        if scvm is None:
+            print("--Could not find virtual machine '{0}'".format(args.uuid))
+            sys.exit(1)
+
+        print("--Found SC Virtual Machine on ESX")
+        details = {'--name': scvm.summary.config.name,
+                '--instance UUID': scvm.summary.config.instanceUuid,
+                '--bios UUID': scvm.summary.config.uuid,
+                '--path to VM': scvm.summary.config.vmPathName,
+                '--host name': scvm.runtime.host.name,
+                '--last booted timestamp': scvm.runtime.bootTime,
+                }
+        
+        for name, value in details.items():
+            print("{0:{width}{base}}: {1}".format(name, value, width=25, base='s'))
+        
+        print("-Shutting dow VM %s" % scvm.summary.config.name)
+        scvm.ShutdownGuest()
+        print("-Pausing for %s seconds..." % delay)
+        time.sleep(delay)
+    
+    except vmodl.MethodFault as error:
+        print("-ERROR-Caught error trying to shutdown VM  " )
+        print("-ERROR-Caught vmodl fault : " + error.msg)
+        return -1
 
 def check_wcp_cluster_status(s,vcip,cluster):
     json_response = s.get('https://' + vcip + '/api/vcenter/namespace-management/clusters/' + cluster)
@@ -76,26 +127,12 @@ def main():
     else:
         password = getpass.getpass(prompt='Enter password for host %s and user %s: ' % (args.host,args.user))
 
-    # PyVMomi work to get all VMs on VC
-    service_instance = None
-    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-    context.verify_mode = ssl.CERT_NONE   
-
     try:
-        print("\nLogging into vCenter API with supplied credentials ")
-        service_instance = SmartConnect(host=args.host,
-                                                user=args.user,
-                                                pwd=args.password,
-                                                port=int(args.port),
-                                                sslContext=context)
-        if not service_instance:
-            print("Could not connect to the specified host using specified "
-                  "username and password")
-            return -1
-
-        atexit.register(Disconnect, service_instance)
-        content = service_instance.RetrieveContent()
-        search_index=service_instance.content.searchIndex
+        print("\nSTEP 0 - Logging into vCenter API with supplied credentials ")
+        vc_service_instance = get_si(args.host,args.user, args.password,args)
+        atexit.register(Disconnect, vc_service_instance)
+        content = vc_service_instance.RetrieveContent()
+        search_index=vc_service_instance.content.searchIndex
 
         # Search for all VM Objects in vSphere API
         objview = content.viewManager.CreateContainerView(content.rootFolder,
@@ -104,20 +141,10 @@ def main():
         
         vmList = objview.view
         objview.Destroy()
-        print("\nSTEP 0 - Getting all VMs from VC API")
-        print("-Successfully logged into vCenter")
-
-        print("-Found %s VMS on VC. " % str(len(vmList)))
-        
-        print("\nSTEP 1 - Getting all Supervisor Control Plane VMs from VC API")
-        supervisor_cluster_vms = []
-        for vmobject in vmList:
-            if "SupervisorControlPlaneVM" in vmobject.summary.config.name:
-                print("-Found Supervisor Control Plane VM %s. " % vmobject.summary.config.name)
-                supervisor_cluster_vms.append(vmobject)
+        print("-Found a total of %s VMS on VC. " % str(len(vmList)))
         
     except vmodl.MethodFault as error:
-        print("ERROR-Caught vmodl fault : " + error.msg)
+        print("-ERROR-Caught vmodl fault : " + error.msg)
         return -1
 
     # Set REST VC Variables
@@ -132,12 +159,12 @@ def main():
     # Connect to VCenter and start a REST session
     vcsession = s.post('https://' + vcip + '/rest/com/vmware/cis/session', auth=(args.user, args.password))
     if not vcsession.ok:
-        print("Session creation is failed, please check vcenter connection")
+        print("-Session creation is failed, please check vcenter connection")
         sys.exit()
     token = json.loads(vcsession.text)["value"]
     token_header = {'vmware-api-session-id': token}
 
-    print("\nSTEP 2 - Getting all Workload Cluster VMs from K8s API Server on Supervisor Cluster")
+    print("\nSTEP 1 - Getting all Workload Cluster VMs from K8s API Server on Supervisor Cluster")
     ## GET the Supervisor Cluster apiserver Endpoint
     wcp_endpoint = check_wcp_cluster_status(s,vcip,cluster_id)
     print("-WCP Endpoint for SC is ", wcp_endpoint)
@@ -146,21 +173,15 @@ def main():
     try:
         subprocess.check_call(['kubectl', 'vsphere', 'login', '--insecure-skip-tls-verify', '--server', wcp_endpoint, '-u', args.user]) 
     except:
-        print("Could not login to WCP SC Endpoint.  Is WCP Service running ? ")
+        print("-Could not login to WCP SC Endpoint.  Is WCP Service running ? ")
 
-    ''' 
-    # DEBUG -Test K8s API with a simple Call   
-    client1 = client.CoreV1Api(api_client=config.new_client_from_config(context=wcp_endpoint)) 
-    for i in client1.list_pod_for_all_namespaces().items:
-        print ('Found a POD {0}'.format(i.metadata.name))
-    '''
     # Create k8s client for CustomObjects
     client2=client.CustomObjectsApi(api_client=config.new_client_from_config(context=wcp_endpoint))
 
     # Return Cluster API "Machine" objects
     # This builds a list of every Guest Cluster VM (Not including SC VMs)
     machine_list_dict=client2.list_namespaced_custom_object("cluster.x-k8s.io","v1beta1","","machines",pretty="True")
-    print("-Found ", str(len(machine_list_dict)), ' kubernetes Workload Cluster VMs')
+    print("\n-Found ", str(len(machine_list_dict)), ' kubernetes Workload Cluster VMs')
     wkld_cluster_vms = []
     for machine in machine_list_dict["items"]:
         print('-Found CAPI Machine Object in SC. VM Name = {0}'.format(machine['metadata']['name']))
@@ -170,40 +191,49 @@ def main():
         vm=search_index.FindByDnsName(None, machine['metadata']['name'],True)
         
         if vm is None:
-            print("ERROR-Could not find specified VM with VC API ")
+            print("-ERROR-Could not find specified VM with VC API ")
   
         else:
-            print("-Found VM matching CAPI Machine Name in VC API. VM=%s. " % vmobject.summary.config.name)
-            #print(' -VM guest OS ID =', vm.summary.config.guestId)
-            #print(' -VM guest Name =', vm.summary.config.guestFullName)
+            print("-Found VM matching CAPI Machine Name in VC API. VM=%s. " % vm.summary.config.name)
             wkld_cluster_vms.append(vm)
 
     # Shutdown WCP Service on vCenter
-    print("\nSTEP 3 - Stopping WCP Service on vCenter")
+    print("\nSTEP 2 - Stopping WCP Service on vCenter")
     input("-Press Enter to confirm/continue...")
-    stop_vc_svcname(s,vcip,"wcp")
+    #stop_vc_svcname(s,vcip,"wcp")
 
-    # Shutdown SC Cluster VMs
-    print("\nSTEP 4 - Shutting down all Supervisor Cluster VMs")
-    print("-The following SC Cluster VMs will be shutdown" )
-    for svm in supervisor_cluster_vms:
-        print("\t",svm.summary.config.name)
-    input("-Press Enter to confirm/continue...")
-    shutdown_Vm(60,supervisor_cluster_vms)
+    ## Find 3 SC CP VMs and shutdown from the ESXi hosts they are running on.
+    print("\nSTEP 3 - Shutting Down all Supervisor Control Plane VMs ")
+    for vmobject in vmList:
+        if "SupervisorControlPlaneVM" in vmobject.summary.config.name:
+            print("-Found Supervisor Control Plane VM %s. " % vmobject.summary.config.name)
+            print("-VM",vmobject.summary.config.name, " is running on ESX host", vmobject.runtime.host.name)
+            vnicManager = vmobject.runtime.host.configManager.virtualNicManager
+            netConfig = vnicManager.QueryNetConfig("management")
+            for vNic in netConfig.candidateVnic:
+                if (netConfig.selectedVnic.index( vNic.key ) != -1):
+                    #print("\tvNic[ " + vNic.key + " ] is selected");  
+                    # Below will return the Management IP (SC Address) for the ESxi host where SC VP VM is running.
+                    print("-ESX host",vmobject.runtime.host.name," has Management IP", vNic.spec.ip.ipAddress)
+                    # Due to permissions limitations we need to log into each ESXi host where the SC CP VM is running
+                    # To perform the shutdown operation.
+                    shutdown_sc_vm(75, vmobject.summary.config.name,vmobject.summary.config.uuid ,vNic.spec.ip.ipAddress,args)
+                else:
+                    print("\tvNic[ " + vNic.key + " ] is not selected; skipping it")
 
-    # Shutdown WCP Service on vCenter
-    print("\nSTEP 5 - Shutting down all Guest Cluster VMs")
+    input("-Press Enter to confirm/continue...or Control-C or Control-X to stop program")
+
+    # Shutdown Guest Cluster Machines Virtual Machines
+    print("\nSTEP 4 - Shutting down all Guest Cluster VMs")
     print("-The following Workload Cluster VMs will be shutdown" )
     for wvm in wkld_cluster_vms:
-        print("\t",wvm.summary.config.name)
+        print("-",wvm.summary.config.name)
     input("-Press Enter to confirm/continue...")
-    shutdown_Vm(10,wkld_cluster_vms)
-
+    shutdown_Vm(45,wkld_cluster_vms)
 
     # Clean up and exit...
     session_delete = s.delete('https://' + vcip + '/rest/com/vmware/cis/session', auth=(args.user, args.password))
     print("\nPOST - Successfully Completed Script - Cleaning up REST Session to VC.")
-
 
 # Start program
 if __name__ == "__main__":
