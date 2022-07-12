@@ -33,7 +33,9 @@ You must run the script with a User that has permissions to shutdown Virtual Mac
 To run the shutdown script
 ``` bash
 
-python3 wcp-shutdown.py -s 192.168.100.50 -u administrator@vsphere.local -p <yourpassword>                                                               
+python3 wcp-shutdown.py -s 192.168.100.50 -u administrator@vsphere.local -p <yourpassword> -c domain-c8
+
+Enter root password for ESXi hosts: 
 
 STEP 0 - Logging into vCenter API with supplied credentials
 /home/nverma/workspace/wcp-shutdown/wcp-shutdown.py:32: DeprecationWarning: ssl.PROTOCOL_TLSv1_2 is deprecated
@@ -59,11 +61,11 @@ To change context, use `kubectl config use-context <workload name>`
 -Found CAPI Machine Object in SC. VM Name = workload-vsphere-tkg5-control-plane-gq26b
 -Found VM matching CAPI Machine Name in VC API. VM=workload-vsphere-tkg5-control-plane-gq26b.
 -Found CAPI Machine Object in SC. VM Name = workload-vsphere-tkg5-default-nodepool-kph4q-64877fc9f4-85b58
--ERROR-Could not find specified VM with VC API
+-Could not find specified VM with VC API
 -Found CAPI Machine Object in SC. VM Name = workload-vsphere-tkg5-default-nodepool-kph4q-64877fc9f4-9b8l2
--ERROR-Could not find specified VM with VC API
+-Could not find specified VM with VC API
 -Found CAPI Machine Object in SC. VM Name = workload-vsphere-tkg5-default-nodepool-kph4q-64877fc9f4-ttn7s
--ERROR-Could not find specified VM with VC API
+-Could not find specified VM with VC API
 
 STEP 2 - Stopping WCP Service on vCenter
 -Press Enter to confirm/continue...
