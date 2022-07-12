@@ -1,17 +1,14 @@
 # WCP-shutdown
-WCP-Shutdown is simple Python script that you point to a vCenter and it is able to gracefully shutdown your TKGs environment.
+WCP-Shutdown is simple Python script that you point to a vCenter and it is able to gracefully shutdown your TKGs or vSphere with Tanzu environment.  The use case for the script is in anticipation for planned maintenance to your vSphere environment such as a planned datacenter outage.
 
 ##  Coverage
-
   - [x] Find and Return 3 Supervisor Control Plane VMs from pyVmomi vSphere API.
   - [x] Find all TKG Workload Cluster Machine objects from K8s API on Supervisor Cluster.
   - [x] Shutdown WCP Service on vCenter and set Startup Type to Manual.
-  - [ ] Shutdown Supervisor Control Plane VMs - VC API or GOVC
+  - [x] Shutdown Supervisor Control Plane VMs - VC API or GOVC
   - [x] Shutdown all Worker & Control Plane Nodes in TKG Clusters - VC API or GOVC
   - [ ] Cordon all Workload Cluster Worker Nodes - K8s API on GC
   - [ ] Validate all Guest Clusters are powere down on Supervisor Cluster - K8s API
-  - [ ] Stop CAPI CAPW Controllers
-  - [ ] 
   ---
 
 ## Setting up the Big Red Button
@@ -26,11 +23,9 @@ git clone https://github.com/tkrausjr/wcp-shutdown.git
 ```
 
 ### vCenter Permissions
-You must run the script with a User that is a member of the "ServiceProviderUsers" Group in vCenter.
+You must run the script with a User that has permissions to shutdown Virtual Machines (Guest Operations).
 
-## Running the Big Red Button
-
-### Option 1 - Run script locally on Linux machine with access to VCenter
+## Running the Big Red Button - Option 1 - Run script locally on Linux machine with access to VCenter
 
 To run the shutdown script
 ``` bash
@@ -107,8 +102,9 @@ STEP 5 - Shutting down all Guest Cluster VMs
 
 POST - Successfully Completed Script - Cleaning up REST Session to VC.
 
-
 ```
 
+## Starting up your vSphere with Tanzu environment
+After your planned maintenance is completed in order to start vSphere with Tanzu you simply need to start the 'wcp' service on vCenter using either govc or the appliance User Interface 'https://<VC-IP>:5480/#/ui/services'
 
 

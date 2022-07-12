@@ -62,7 +62,7 @@ def stop_vc_svcname(s,vcip,svc_name):
 def shutdown_Vm(delay,list_of_vms):
     for vm in list_of_vms:
         try:
-            print("--Shutting dow VM %s." % vm.summary.config.name)
+            print("--Shutting down VM %s." % vm.summary.config.name)
             vm.ShutdownGuest()
             print("--Pausing for %s seconds..." % delay)
             time.sleep(delay)
@@ -227,7 +227,7 @@ def main():
     print("\nSTEP 4 - Shutting down all Guest Cluster VMs")
     print("-The following Workload Cluster VMs will be shutdown" )
     for wvm in wkld_cluster_vms:
-        print("\t",wvm.summary.config.name)
+        print("-",wvm.summary.config.name)
     input("-Press Enter to confirm/continue...")
     shutdown_Vm(45,wkld_cluster_vms)
 
