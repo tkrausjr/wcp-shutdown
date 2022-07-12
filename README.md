@@ -132,6 +132,6 @@ POST STEPS - Successfully Completed Script - Cleaning up REST Session to VC.
 ```
 
 ## Starting up your vSphere with Tanzu environment
-After your planned maintenance is completed in order to start vSphere with Tanzu you simply need to start the 'wcp' service on vCenter using either govc or the appliance User Interface 'https://<VC-IP>:5480/#/ui/services'
+After your planned maintenance is completed in order to start vSphere with Tanzu you simply need to start the 'wcp' service on vCenter using either govc or the appliance User Interface `https://<VC-IP>:5480/#/ui/services`
 
 
