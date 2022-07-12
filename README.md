@@ -42,7 +42,7 @@ To run the shutdown script
 ``` bash
 cd wcp-shutdown/
 
-python3 wcp-shutdown.py -s 192.168.100.50 -u administrator@vsphere.local -p <yourpassword> -c domain-c8
+python3 wcp-shutdown.py -v 192.168.100.50 -u administrator@vsphere.local -p <yourpassword> -c domain-c8
 
 Enter root password for ESXi hosts: 
 
