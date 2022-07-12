@@ -19,10 +19,13 @@ import time
 def GetArgs():
    # Supports the command-line arguments listed below.
    parser = argparse.ArgumentParser(description='Process args for shutting down a Virtual Machine')
-   parser.add_argument('-s', '--host', required=True, action='store', help='Remote host to connect to')
+   parser.add_argument('-v', '--vc_host', required=True, action='store', help='Remote VC host to connect to')
    parser.add_argument('-o', '--port', type=int, default=443, action='store', help='Port to connect on')
-   parser.add_argument('-u', '--user', required=True, action='store', help='User name to use when connecting to host')
-   parser.add_argument('-p', '--password', required=False, action='store', help='Password to use when connecting to host')
+   parser.add_argument('-u', '--vc_user', required=True, action='store', help='User name to use when connecting to VC host')
+   parser.add_argument('-p', '--vc_password', required=False, action='store', help='Password to use when connecting to VC host')
+   parser.add_argument('-e', '--esx_user', required=False, action='store', default="root", help='User name to use when connecting to ESXi host')
+   parser.add_argument('-f', '--esx_password', required=False, action='store', help='Password to use when connecting to ESXi host')
+   parser.add_argument('-c', '--cluster', required=False, action='store', help='vSphere Cluster that vSphere with Tanzu is configured on.')
    args = parser.parse_args()
    return args
 
@@ -72,10 +75,10 @@ def shutdown_Vm(delay,list_of_vms):
             print("--ERROR-Caught vmodl fault : " + error.msg)
             return -1
 
-def shutdown_sc_vm(delay,vm_name,vm_uuid,vm_host_ip,args):
+def shutdown_sc_vm(delay,vm_name,vm_uuid,vm_host_ip,esx_user,esx_password,args):
     try:
         print("\n--Shutting down VM " + vm_name + " on host "+ vm_host_ip )
-        esx_service_instance = get_si(vm_host_ip,"root","VMware1!",args)
+        esx_service_instance = get_si(vm_host_ip, esx_user, esx_password, args)
         content = esx_service_instance.RetrieveContent()
         atexit.register(Disconnect, esx_service_instance)
         search_index=esx_service_instance.content.searchIndex
@@ -122,14 +125,22 @@ def check_wcp_cluster_status(s,vcip,cluster):
 def main():
 
     args = GetArgs()
-    if args.password:
-        password = args.password
+    if args.vc_password:
+        vc_password = args.vc_password
     else:
-        password = getpass.getpass(prompt='Enter password for host %s and user %s: ' % (args.host,args.user))
+        vc_password = getpass.getpass(prompt='Enter password for VC host %s and user %s: ' % (args.vc_host,args.vc_user))
+    if args.esx_password:
+        esx_password = args.esx_password
+    else:
+        esx_password = getpass.getpass(prompt='Enter root password for ESXi hosts: ' )
+    if args.cluster:
+        cluster_id = args.cluster
+    else:
+        cluster_id = "domain-c8"
 
     try:
         print("\nSTEP 0 - Logging into vCenter API with supplied credentials ")
-        vc_service_instance = get_si(args.host,args.user, args.password,args)
+        vc_service_instance = get_si(args.vc_host,args.vc_user, vc_password,args)
         atexit.register(Disconnect, vc_service_instance)
         content = vc_service_instance.RetrieveContent()
         search_index=vc_service_instance.content.searchIndex
@@ -150,14 +161,12 @@ def main():
     # Set REST VC Variables
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
     headers = {'content-type': 'application/json'}
-    vcip = args.host
-    cluster_id = "domain-c8"
     s = "Global"
     s = requests.Session()
     s.verify = False
 
     # Connect to VCenter and start a REST session
-    vcsession = s.post('https://' + vcip + '/rest/com/vmware/cis/session', auth=(args.user, args.password))
+    vcsession = s.post('https://' + args.vc_host + '/rest/com/vmware/cis/session', auth=(args.vc_user, vc_password))
     if not vcsession.ok:
         print("-Session creation is failed, please check vcenter connection")
         sys.exit()
@@ -166,12 +175,12 @@ def main():
 
     print("\nSTEP 1 - Getting all Workload Cluster VMs from K8s API Server on Supervisor Cluster")
     ## GET the Supervisor Cluster apiserver Endpoint
-    wcp_endpoint = check_wcp_cluster_status(s,vcip,cluster_id)
+    wcp_endpoint = check_wcp_cluster_status(s,args.vc_host,cluster_id)
     print("-WCP Endpoint for SC is ", wcp_endpoint)
 
     ## Log into the Supervisor Cluster to create kubeconfig contexts
     try:
-        subprocess.check_call(['kubectl', 'vsphere', 'login', '--insecure-skip-tls-verify', '--server', wcp_endpoint, '-u', args.user]) 
+        subprocess.check_call(['kubectl', 'vsphere', 'login', '--insecure-skip-tls-verify', '--server', wcp_endpoint, '-u', args.vc_user]) 
     except:
         print("-Could not login to WCP SC Endpoint.  Is WCP Service running ? ")
 
@@ -212,12 +221,11 @@ def main():
             netConfig = vnicManager.QueryNetConfig("management")
             for vNic in netConfig.candidateVnic:
                 if (netConfig.selectedVnic.index( vNic.key ) != -1):
-                    #print("\tvNic[ " + vNic.key + " ] is selected");  
                     # Below will return the Management IP (SC Address) for the ESxi host where SC VP VM is running.
                     print("-ESX host",vmobject.runtime.host.name," has Management IP", vNic.spec.ip.ipAddress)
                     # Due to permissions limitations we need to log into each ESXi host where the SC CP VM is running
                     # To perform the shutdown operation.
-                    shutdown_sc_vm(75, vmobject.summary.config.name,vmobject.summary.config.uuid ,vNic.spec.ip.ipAddress,args)
+                    shutdown_sc_vm(25, vmobject.summary.config.name,vmobject.summary.config.uuid ,vNic.spec.ip.ipAddress,args.esx_user,esx_password,args)
                 else:
                     print("\tvNic[ " + vNic.key + " ] is not selected; skipping it")
 
@@ -229,10 +237,10 @@ def main():
     for wvm in wkld_cluster_vms:
         print("-",wvm.summary.config.name)
     input("-Press Enter to confirm/continue...")
-    shutdown_Vm(45,wkld_cluster_vms)
+    shutdown_Vm(20,wkld_cluster_vms)
 
     # Clean up and exit...
-    session_delete = s.delete('https://' + vcip + '/rest/com/vmware/cis/session', auth=(args.user, args.password))
+    session_delete = s.delete('https://' + args.vc_host + '/rest/com/vmware/cis/session', auth=(args.vc_user, vc_password))
     print("\nPOST - Successfully Completed Script - Cleaning up REST Session to VC.")
 
 # Start program
