@@ -181,7 +181,7 @@ def main():
     # Return Cluster API "Machine" objects
     # This builds a list of every Guest Cluster VM (Not including SC VMs)
     machine_list_dict=client2.list_namespaced_custom_object("cluster.x-k8s.io","v1beta1","","machines",pretty="True")
-    print("-Found ", str(len(machine_list_dict)), ' kubernetes Workload Cluster VMs')
+    print("\n-Found ", str(len(machine_list_dict)), ' kubernetes Workload Cluster VMs')
     wkld_cluster_vms = []
     for machine in machine_list_dict["items"]:
         print('-Found CAPI Machine Object in SC. VM Name = {0}'.format(machine['metadata']['name']))
