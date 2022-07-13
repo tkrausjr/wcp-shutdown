@@ -213,7 +213,7 @@ def main():
     # Shutdown WCP Service on vCenter
     print("\nSTEP 2 - Stopping WCP Service on vCenter")
     input("-Press Enter to confirm/continue...")
-    stop_vc_svcname(s,vcip,"wcp")
+    stop_vc_svcname(s,args.vc_host,"wcp")
 
     ## Find 3 SC CP VMs and shutdown from the ESXi hosts they are running on.
     print("\nSTEP 3 - Shutting Down all Supervisor Control Plane VMs ")
