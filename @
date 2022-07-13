@@ -191,7 +191,7 @@ def main():
     # This builds a list of every Guest Cluster VM (Not including SC VMs)
     try:
         machine_list_dict=client2.list_namespaced_custom_object("cluster.x-k8s.io","v1alpha3","","machines",pretty="True")
-        print("\n-Found", str(len(machine_list_dict)), 'kubernetes Workload Cluster VMs')
+        print("\n-Found ", str(len(machine_list_dict)), ' kubernetes Workload Cluster VMs')
     except ApiException as e:
         print("Exception when calling CustomObjectsApi->list_namespaced_custom_object: %s\n" % e)
     wkld_cluster_vms = []
