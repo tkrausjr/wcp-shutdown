@@ -192,8 +192,9 @@ def main():
     try:
         machine_list_dict=client2.list_namespaced_custom_object("cluster.x-k8s.io","v1alpha3","","machines",pretty="True")
         print("\n-Found", str(len(machine_list_dict)), 'kubernetes Workload Cluster VMs')
-    except ApiException as e:
+    except Exception as e:
         print("Exception when calling CustomObjectsApi->list_namespaced_custom_object: %s\n" % e)
+    
     wkld_cluster_vms = []
     for machine in machine_list_dict["items"]:
         print('-Found CAPI Machine Object in SC. VM Name = {0}'.format(machine['metadata']['name']))
