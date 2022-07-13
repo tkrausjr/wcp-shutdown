@@ -16,6 +16,13 @@ You have two options for running the environment shutdown.
 
 On Ubuntu 20.04 with Python3 already installed.
 1) Make sure kubectl with kubectl vSphere plugin installed on the Host 
+
+```
+root# which kubectl
+  /usr/local/bin/kubectl
+root# which kubectl-vsphere
+  /usr/local/bin/kubectl-vsphere
+```
 2) Install the required Python Modules
 
 ```
@@ -27,13 +34,15 @@ git clone https://github.com/tkrausjr/wcp-shutdown.git
 
 ### vCenter Permissions
 You must run the script with a User that has permissions to shutdown Virtual Machines (Guest Operations).
+A member of the Administrators group on vCenter will work.
 
 ## Running the Big Red Button - Option 1 - Run script locally on Linux machine with access to VCenter
 
 To run the shutdown script
 ``` bash
+cd wcp-shutdown/
 
-python3 wcp-shutdown.py -s 192.168.100.50 -u administrator@vsphere.local -p <yourpassword> -c domain-c8
+python3 wcp-shutdown.py -v 192.168.100.50 -u administrator@vsphere.local -p <yourpassword> -c domain-c8
 
 Enter root password for ESXi hosts: 
 
@@ -132,6 +141,6 @@ POST STEPS - Successfully Completed Script - Cleaning up REST Session to VC.
 ```
 
 ## Starting up your vSphere with Tanzu environment
-After your planned maintenance is completed in order to start vSphere with Tanzu you simply need to start the 'wcp' service on vCenter using either govc or the appliance User Interface 'https://<VC-IP>:5480/#/ui/services'
+After your planned maintenance is completed in order to start vSphere with Tanzu you simply need to start the 'wcp' service on vCenter using either govc or the appliance User Interface `https://<VC-IP>:5480/#/ui/services`
 
 
