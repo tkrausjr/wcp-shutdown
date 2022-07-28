@@ -46,30 +46,29 @@ options:
                         (Required) Remote VC host to connect to
   -o PORT, --port PORT  (Optional) Port to connect on. Default=443.
   -u VC_USER, --vc_user VC_USER
-                        (Required) User name to use when connecting to vCenter
+                        (Required) User name to use when connecting to vCenter.
   -p VC_PASSWORD, --vc_password VC_PASSWORD
-                        (Required) Password to use when connecting to vCenter
+                        (Required) Password to use when connecting to vCenter.
   -e ESX_USER, --esx_user ESX_USER
                         (Optional) User name to use when connecting to ESXi host. Default=root.
   -f ESX_PASSWORD, --esx_password ESX_PASSWORD
                         (Optional) Password to use when connecting to ESXi host. If not provided user will be prompted to enter at runtime.
   -c CLUSTER, --cluster CLUSTER
-                        (Optional) vSphere Cluster that vSphere with Tanzu is configured on. Default=First Cluster configured.
+                        (Required) vSphere Cluster Name that vSphere with Tanzu is configured on.
 
 ## Running the Big Red Button - Run script locally on Linux machine with access to VCenter
 To run the shutdown script
 ``` bash
 cd wcp-shutdown/
 
-python3 wcp-shutdown.py -v 192.168.100.50 -u administrator@vsphere.local -p <yourpassword> -c domain-c8
+python3 wcp-shutdown.py -v 192.168.100.50 -u administrator@vsphere.local -p <yourpassword> -c vsphere-cluster-1
 
 Enter root password for ESXi hosts: 
 
 STEP 0 - Logging into vCenter API with supplied credentials
-/home/nverma/workspace/wcp-shutdown/wcp-shutdown.py:32: DeprecationWarning: ssl.PROTOCOL_TLSv1_2 is deprecated
-  context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
 --Successfully logged in to VIM API
 -Found a total of 11 VMS on VC.
+-Found the vSphere Cluster named vsphere-cluster-1 with ID domain-c8
 
 STEP 1 - Getting all Workload Cluster VMs from K8s API Server on Supervisor Cluster
 -WCP Endpoint for SC is  192.168.104.11
