@@ -18,14 +18,14 @@ import time
 
 def GetArgs():
    # Supports the command-line arguments listed below.
-   parser = argparse.ArgumentParser(description='Process args for shutting down a Virtual Machine')
-   parser.add_argument('-v', '--vc_host', required=True, action='store', help='Remote VC host to connect to')
-   parser.add_argument('-o', '--port', type=int, default=443, action='store', help='Port to connect on')
-   parser.add_argument('-u', '--vc_user', required=True, action='store', help='User name to use when connecting to VC host')
-   parser.add_argument('-p', '--vc_password', required=False, action='store', help='Password to use when connecting to VC host')
-   parser.add_argument('-e', '--esx_user', required=False, action='store', default="root", help='User name to use when connecting to ESXi host')
-   parser.add_argument('-f', '--esx_password', required=False, action='store', help='Password to use when connecting to ESXi host')
-   parser.add_argument('-c', '--cluster', required=False, action='store', help='vSphere Cluster that vSphere with Tanzu is configured on.')
+   parser = argparse.ArgumentParser(description='Script for shutting down Supervisor and Workload Clusters in vSphere w/ Tanzu')
+   parser.add_argument('-v', '--vc_host', required=True, action='store', help='(Required) Remote VC host to connect to')
+   parser.add_argument('-o', '--port', type=int, default=443, action='store', help='(Optional) Port to connect on. Default=443. ')
+   parser.add_argument('-u', '--vc_user', required=True, action='store', help='(Required) User name to use when connecting to vCenter')
+   parser.add_argument('-p', '--vc_password', required=False, action='store', help='(Required) Password to use when connecting to vCenter')
+   parser.add_argument('-e', '--esx_user', required=False, action='store', default="root", help='(Optional) User name to use when connecting to ESXi host. Default=root.')
+   parser.add_argument('-f', '--esx_password', required=False, action='store', help='(Optional) Password to use when connecting to ESXi host. If not provided user will be prompted to enter at runtime.')
+   parser.add_argument('-c', '--cluster', required=True, action='store', help='(Required) vSphere Cluster that vSphere with Tanzu is configured on.')
    args = parser.parse_args()
    return args
 
@@ -45,6 +45,10 @@ def get_si(host,user,password,args):
     if not service_instance:
         print("--Could not connect to the specified host using specified username and password")
         return -1
+
+def get_obj(content, vimtype, name = None):
+    return [item for item in content.viewManager.CreateContainerView(
+        content.rootFolder, [vimtype], recursive=True).view]
 
 def stop_vc_svcname(s,vcip,svc_name):
     json_config = {"startup_type": "MANUAL"}
@@ -133,11 +137,7 @@ def main():
         esx_password = args.esx_password
     else:
         esx_password = getpass.getpass(prompt='Enter root password for ESXi hosts: ' )
-    if args.cluster:
-        cluster_id = args.cluster
-    else:
-        cluster_id = "domain-c8"
-
+    
     try:
         print("\nSTEP 0 - Logging into vCenter API with supplied credentials ")
         vc_service_instance = get_si(args.vc_host,args.vc_user, vc_password,args)
@@ -172,6 +172,17 @@ def main():
         sys.exit()
     token = json.loads(vcsession.text)["value"]
     token_header = {'vmware-api-session-id': token}
+
+    ## Find Cluster object from Cluster Name specified in script parameter
+    if args.cluster:
+        for cl in get_obj(content, vim.ComputeResource):
+            if cl.name == args.cluster:
+                cluster_id = str(cl).split(":")[1].rstrip('\'')
+                print('-Found the vSphere Cluster named',args.cluster,'with ID',cluster_id )
+            else:
+                print('-ERROR-Could NOT find cluster with name , ', args.cluster)
+                print('-Double check the Cluster Name. Exiting the program')
+                sys.exit(1)
 
     print("\nSTEP 1 - Getting all Workload Cluster VMs from K8s API Server on Supervisor Cluster")
     ## GET the Supervisor Cluster apiserver Endpoint
