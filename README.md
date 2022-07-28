@@ -1,5 +1,5 @@
 # WCP-shutdown
-wcp-shutdown will gracefully shutdown a vSphere with Tanzu environment including Supervisor Cluster and all TKG Guest Clusters.  The use case for the script is in anticipation for planned maintenance to your vSphere environment such as a planned datacenter outage.
+wcp-shutdown will gracefully shutdown a vSphere with Tanzu environment including Supervisor Cluster and all TKG Guest Clusters.  The use case for the script is gracefully shutting down both Supervisor Cluster and Workload Clusters in a vSphere w/ Tanzu environment.  Typically this is needed for planned maintenance to your vSphere environment such as a planned datacenter outage.  Because of permissions issues with Supervisor Cluster Virtual Machines in vCenter you need to provide the script with both vCenter Credentials and local ESXi credentials.
 
 ##  Coverage
   - [x] Find and Return 3 Supervisor Control Plane VMs from pyVmomi vSphere API.
@@ -12,7 +12,6 @@ wcp-shutdown will gracefully shutdown a vSphere with Tanzu environment including
   ---
 
 ## Setting up the Big Red Button
-You have two options for running the environment shutdown. 
 
 On Ubuntu 20.04 with Python3 already installed.
 1) Make sure kubectl with kubectl vSphere plugin installed on the Host 
@@ -32,12 +31,32 @@ pip3 install kubernetes
 git clone https://github.com/tkrausjr/wcp-shutdown.git
 ```
 
-### vCenter Permissions
+## Permissions
 You must run the script with a User that has permissions to shutdown Virtual Machines (Guest Operations).
-A member of the Administrators group on vCenter will work.
+A member of the Administrators group on vCenter will work. ESxi credentials will also be needed to shutdown the Supervisor Control Pane Virtual Machines.
 
-## Running the Big Red Button - Option 1 - Run script locally on Linux machine with access to VCenter
+## Parameters
+python3 wcp-shutdown.py --help                                                                                                                              usage: wcp-shutdown.py [-h] -v VC_HOST [-o PORT] -u VC_USER [-p VC_PASSWORD] [-e ESX_USER] [-f ESX_PASSWORD] [-c CLUSTER]
 
+Script for shutting down Supervisor and Workload Clusters in vSphere w/ Tanzu
+
+options:
+  -h, --help            show this help message and exit
+  -v VC_HOST, --vc_host VC_HOST
+                        (Required) Remote VC host to connect to
+  -o PORT, --port PORT  (Optional) Port to connect on. Default=443.
+  -u VC_USER, --vc_user VC_USER
+                        (Required) User name to use when connecting to vCenter
+  -p VC_PASSWORD, --vc_password VC_PASSWORD
+                        (Required) Password to use when connecting to vCenter
+  -e ESX_USER, --esx_user ESX_USER
+                        (Optional) User name to use when connecting to ESXi host. Default=root.
+  -f ESX_PASSWORD, --esx_password ESX_PASSWORD
+                        (Optional) Password to use when connecting to ESXi host. If not provided user will be prompted to enter at runtime.
+  -c CLUSTER, --cluster CLUSTER
+                        (Optional) vSphere Cluster that vSphere with Tanzu is configured on. Default=First Cluster configured.
+
+## Running the Big Red Button - Run script locally on Linux machine with access to VCenter
 To run the shutdown script
 ``` bash
 cd wcp-shutdown/
