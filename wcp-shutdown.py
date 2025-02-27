@@ -88,7 +88,7 @@ def shutdown_sc_vm(delay,vm_name,vm_uuid,vm_host_ip,esx_user,esx_password,args):
         search_index=esx_service_instance.content.searchIndex
         scvm=search_index.FindByUuid(None, vm_uuid,True)
 
-        if scvm is None:
+        if scvm == None:
             print("--Could not find virtual machine '{0}'".format(args.uuid))
             sys.exit(1)
 
@@ -120,10 +120,14 @@ def check_wcp_cluster_status(s,vcip,cluster):
         result = json.loads(json_response.text)
         if result["config_status"] == "RUNNING":
             if result["kubernetes_status"] == "READY":
+                print("-WCP Cluster Status is: " + result["config_status"])
                 return result["api_server_cluster_endpoint"]
         else:
-            return 0
+            print("-ERROR-Getting WCP Cluster Status is: " + result["config_status"])
+            print("-ERROR-Aborting because WCP Cluster is NOT Healthy")
+            return result["api_server_cluster_endpoint"]
     else:
+        print("-ERROR-Could not connect to WCP API. Error: " + json_response.text)
         return 0
 
 def main():
@@ -179,10 +183,7 @@ def main():
             if cl.name == args.cluster:
                 cluster_id = str(cl).split(":")[1].rstrip('\'')
                 print('-Found the vSphere Cluster named',args.cluster,'with ID',cluster_id )
-            else:
-                print('-ERROR-Could NOT find cluster with name , ', args.cluster)
-                print('-Double check the Cluster Name. Exiting the program')
-                sys.exit(1)
+
 
     print("\nSTEP 1 - Getting all Workload Cluster VMs from K8s API Server on Supervisor Cluster")
     ## GET the Supervisor Cluster apiserver Endpoint
@@ -190,18 +191,24 @@ def main():
     print("-WCP Endpoint for SC is ", wcp_endpoint)
 
     ## Log into the Supervisor Cluster to create kubeconfig contexts
+    print("\n\n -Trying to login to Supervisor Cluster.... \n\n")
     try:
-        subprocess.check_call(['kubectl', 'vsphere', 'login', '--insecure-skip-tls-verify', '--server', wcp_endpoint, '-u', args.vc_user]) 
+        #subprocess.check_call(['kubectl', 'vsphere', 'login', '--insecure-skip-tls-verify', '--server', wcp_endpoint, '-u', args.vc_user], stdout=FNULL) 
+        subprocess.check_call(['kubectl', 'vsphere', 'login', '--insecure-skip-tls-verify', '--server', wcp_endpoint, '-u', args.vc_user])
     except:
         print("-Could not login to WCP SC Endpoint.  Is WCP Service running ? ")
 
     # Create k8s client for CustomObjects
-    client2=client.CustomObjectsApi(api_client=config.new_client_from_config(context=wcp_endpoint))
+    try:
+        client2=client.CustomObjectsApi(api_client=config.new_client_from_config(context=wcp_endpoint))
+        print("Successfully created K8s Client: %s\n" )
+    except Exception as e:
+        print("Exception when creating Kubernetes Client object: %s\n" % e)
 
     # Return Cluster API "Machine" objects
     # This builds a list of every Guest Cluster VM (Not including SC VMs)
     try:
-        machine_list_dict=client2.list_namespaced_custom_object("cluster.x-k8s.io","v1alpha3","","machines",pretty="True")
+        machine_list_dict=client2.list_namespaced_custom_object("cluster.x-k8s.io","v1beta1","","machines",pretty="True")
         print("\n-Found", str(len(machine_list_dict)), 'kubernetes Workload Cluster VMs')
     except Exception as e:
         print("Exception when calling CustomObjectsApi->list_namespaced_custom_object: %s\n" % e)
@@ -214,7 +221,7 @@ def main():
         # Search pyVmomi all VMs by DNSName
         vm=search_index.FindByDnsName(None, machine['metadata']['name'],True)
         
-        if vm is None:
+        if vm == None:
             print("-Could not find a matching VM with VC API ")
   
         else:
